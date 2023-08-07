@@ -1,4 +1,6 @@
-import { asyncRoutes, constantRoutes } from '@/router'
+import { constantRoutes } from '@/router'
+import { getRoutes } from '@/api/sys/menu'
+import Layout from '@/layout'
 
 /**
  * Use meta.role to determine if the current user has permission
@@ -18,19 +20,44 @@ function hasPermission(roles, route) {
  * @param routes asyncRoutes
  * @param roles
  */
+
+/**
+          {
+            "name": "/test/2",
+            "path": "/test/2",
+            "component": "测试组件2",
+            "redirect": null,
+            "meta": {
+                "tittle": "testMenu",
+                "icon": "icon2",
+                "hidden": true,
+                "keepAlive": true,
+                "roleIds": []
+            },
+            "children": []
+        }
+ */
+
 export function filterAsyncRoutes(routes, roles) {
   const res = []
-
   routes.forEach(route => {
-    const tmp = { ...route }
+    const tmp = { ... route }
     if (hasPermission(roles, tmp)) {
-      if (tmp.children) {
-        tmp.children = filterAsyncRoutes(tmp.children, roles)
+      const component = tmp.component
+      if (route.component) {
+        if (component === 'Layout') {
+          tmp.component = Layout
+        } else {
+          // 接口组件字符串转换成组件对象
+          tmp.component = (resolve) => require([`@/views/${component}`], resolve)
+        }
+        if (tmp.children) {
+          tmp.children = filterAsyncRoutes(tmp.children, roles)
+        }
       }
       res.push(tmp)
     }
   })
-
   return res
 }
 
@@ -49,14 +76,13 @@ const mutations = {
 const actions = {
   generateRoutes({ commit }, roles) {
     return new Promise(resolve => {
-      let accessedRoutes
-      if (roles.includes('admin')) {
-        accessedRoutes = asyncRoutes || []
-      } else {
-        accessedRoutes = filterAsyncRoutes(asyncRoutes, roles)
-      }
-      commit('SET_ROUTES', accessedRoutes)
-      resolve(accessedRoutes)
+      getRoutes()
+        .then(res => {
+          const routes = res.data
+          const filterRoutes = filterAsyncRoutes(routes,roles)
+          commit('SET_ROUTES', filterRoutes)
+          resolve(filterRoutes)
+        })
     })
   }
 }
