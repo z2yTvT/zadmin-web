@@ -8,8 +8,8 @@ import Layout from '@/layout'
  * @param route
  */
 function hasPermission(roles, route) {
-  if (route.meta && route.meta.roles) {
-    return roles.some(role => route.meta.roles.includes(role))
+  if (route.meta && route.meta.roleKeys) {
+    return roles.some(role => route.meta.roleKeys.includes(role))
   } else {
     return true
   }
@@ -70,6 +70,7 @@ const mutations = {
   SET_ROUTES: (state, routes) => {
     state.addRoutes = routes
     state.routes = constantRoutes.concat(routes)
+    console.log(state.routes)
   }
 }
 
@@ -80,6 +81,9 @@ const actions = {
         .then(res => {
           const routes = res.data
           const filterRoutes = filterAsyncRoutes(routes,roles)
+          console.log(filterRoutes)
+          console.log(roles)
+          console.log('filterRoutes')
           commit('SET_ROUTES', filterRoutes)
           resolve(filterRoutes)
         })
