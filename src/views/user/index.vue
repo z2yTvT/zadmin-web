@@ -20,6 +20,8 @@
               <el-button type="primary" @click="getUserList">查询</el-button>
             </el-col>
           </el-row>
+          <el-row>
+          </el-row>
         </el-form>
       </div>
       <div>
@@ -43,11 +45,11 @@
             {{ scope.row.userName }}
           </template>
         </el-table-column>
-        <el-table-column label="所属角色" align="center">
-          <template slot-scope="scope">
-            {{ scope.row.roleName }}
-          </template>
-        </el-table-column>
+<!--        <el-table-column label="所属角色" align="center">-->
+<!--          <template slot-scope="scope">-->
+<!--            {{ scope.row.roleName }}-->
+<!--          </template>-->
+<!--        </el-table-column>-->
         <el-table-column label="状态" width="95" align="center">
           <template slot-scope="scope">
             <div v-if="scope.row.userStatus == 0">启用</div>
@@ -63,6 +65,7 @@
           <template slot-scope="scope">
             <span>{{ scope.row }}</span>
             <span style="cursor: pointer"><el-tag @click="showEdit(scope.row)">修改</el-tag></span>
+            <span style="cursor: pointer"><el-tag @click="showRelateRole(scope.row)">关联角色</el-tag></span>
           </template>
         </el-table-column>
       </el-table>
@@ -167,6 +170,33 @@
         <el-button type="primary" @click="addSubmit">确 定</el-button>
       </span>
     </el-dialog>
+    <el-dialog
+      title="关联角色"
+      :visible.sync="relateRoleDia"
+      width="40%">
+
+      <el-table
+        ref="multipleTable"
+        :data="allRole"
+        tooltip-effect="dark"
+        style="width: 100%"
+        @selection-change="handleSelectionChange">
+        <el-table-column
+          type="selection"
+          width="55">
+        </el-table-column>
+        <el-table-column
+          prop="roleName"
+          label="角色"
+          show-overflow-tooltip>
+        </el-table-column>
+      </el-table>
+
+       <span slot="footer" class="dialog-footer">
+        <el-button @click="relateRoleDia = false">取 消</el-button>
+        <el-button type="primary" @click="relateSubmit">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -213,12 +243,53 @@ export default {
         { label: "启用", value: "0" },
         { label: "禁用", value: "1" },
       ],
+      allRole:[],
+      userCurRole:[],
+      relateRoleForm:{
+        id: 0,
+        roleIds: []
+      },
+      relateRoleDia:false,
+
     }
   },
   created() {
     this.getUserList()
   },
   methods: {
+
+    handleSelectionChange(e){
+      this.relateRoleForm.roleIds = e.map(item => item.id)
+    },
+    async showRelateRole(row){
+      await api.getRoleByUid(row.id).then(response =>{
+        this.userCurRole = response.data
+      })
+      await api.getAllRole().then(response => {
+        this.allRole = response.data
+      })
+      if(this.userCurRole.length === 0){
+        return
+      }
+
+      const curIdsSet = new Set(this.userCurRole.map(item => item.id));
+      this.$nextTick(function(){
+          this.allRole.forEach(row => {
+            if(curIdsSet.has(row.id)){
+              this.$refs.multipleTable.toggleRowSelection(row,true);
+            }
+          })
+      })
+      this.relateRoleForm.id = row.id
+      this.relateRoleDia = true;
+    },
+    relateSubmit(){
+      api.relateUserRole(this.relateRoleForm).then(res => {
+        if(res.code == 200){
+          this.relateRoleDia = false
+        }
+      })
+    },
     addSubmit(){
       this.$refs['addForm'].validate(valid =>{
         if(valid){

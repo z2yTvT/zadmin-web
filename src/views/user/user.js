@@ -24,9 +24,36 @@ export function addUser(data) {
   })
 }
 
+export function getRoleByUid(uid) {
+  return request({
+    url: '/role/getRoleByUid/?uid=' + uid,
+    method: 'get',
+  })
+}
+
+export function getAllRole() {
+  return request({
+    url: '/role/getAllRole',
+    method: 'get',
+  })
+}
+
+export function relateUserRole(data) {
+  return request({
+    url: '/user/relateUserRole',
+    method: 'post',
+    data
+  })
+}
+
+
+
 
 export default {
   getUserList,
   editUser,
-  addUser
+  addUser,
+  getRoleByUid,
+  getAllRole,
+  relateUserRole,
 }
