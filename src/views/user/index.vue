@@ -20,8 +20,6 @@
               <el-button type="primary" @click="getUserList">查询</el-button>
             </el-col>
           </el-row>
-          <el-row>
-          </el-row>
         </el-form>
       </div>
       <div>
@@ -29,7 +27,12 @@
           <el-button type="success" @click="showAdd">新增用户</el-button>
         </el-card>
       </div>
-      <el-table :data="list"  border fit highlight-current-row>
+      <el-table
+        :data="list"
+        border
+        fit
+        highlight-current-row
+      >
         <el-table-column align="center" label="用户ID" width="95">
           <template slot-scope="scope">
             {{ scope.row.id }}
@@ -268,9 +271,6 @@ export default {
       await api.getAllRole().then(response => {
         this.allRole = response.data
       })
-      if(this.userCurRole.length === 0){
-        return
-      }
 
       const curIdsSet = new Set(this.userCurRole.map(item => item.id));
       this.$nextTick(function(){

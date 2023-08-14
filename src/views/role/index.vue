@@ -24,7 +24,11 @@
           </el-row>
         </el-form>
       </div>
-
+      <div>
+        <el-card>
+          <el-button type="success" @click="showAddDia">新增角色</el-button>
+        </el-card>
+      </div>
       <el-table :data="list"  border fit highlight-current-row>
         <el-table-column align="center" label="角色ID" width="95">
           <template slot-scope="scope">
@@ -71,10 +75,47 @@
         </el-table-column>
       </el-table>
 
+
+
       <el-dialog
-        title="编辑角色"
-        :visible.sync="roleDetailDia"
+        title="新增角色"
+        :visible.sync="addDia"
         width="40%">
+
+        <el-form ref="addForm" :model="addForm" :rules="rules" label-width="110px">
+          <el-row>
+            <el-col :span="12">
+              <el-form-item label="角色名称" prop="roleName">
+                <el-input v-model="addForm.roleName" placeholder="请输入角色名称" maxlength="30" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row>
+            <el-col :span="12">
+              <el-form-item label="角色标识" prop="roleKey">
+                <el-input v-model="addForm.roleKey" placeholder="请输入角色标识" maxlength="30" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row>
+            <el-col :span="12">
+              <el-form-item label="数据权限范围" prop="dataScope">
+                <el-input v-model="addForm.dataScope" placeholder="数据权限范围" maxlength="30" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row>
+            <el-col :span="12">
+              <el-form-item label="备注" prop="remark">
+                <el-input v-model="addForm.remark" placeholder="备注" maxlength="30" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="addDia = false">取 消</el-button>
+          <el-button type="primary" @click="addRole">确 定</el-button>
+        </span>
       </el-dialog>
 
       <el-dialog
@@ -87,18 +128,19 @@
           show-checkbox
           ref="menu"
           node-key="id"
-          :check-strictly="false"
+          :check-strictly="true"
           empty-text="加载中"
           :props="{children: 'children',label: 'label'}"
           :default-checked-keys="selectedMenus"
           highlight-current
           @check-change="menuSelectedChange"
+          :default-expand-all="true"
         ></el-tree>
 
         <span slot="footer" class="dialog-footer">
           <el-button @click="relateMenuDia = false">取 消</el-button>
           <el-button type="primary" @click="relateSubmit">确 定</el-button>
-      </span>
+        </span>
       </el-dialog>
 
     </el-card>
@@ -113,6 +155,26 @@ export default {
   name: "index",
   data() {
     return{
+      updateType: 0,
+      rules: {
+        roleName: [
+          { required: true, message: "角色名称不能为空", trigger: "blur" },
+        ],
+        roleKey: [
+          { required: true, message: "角色标识不能为空", trigger: "blur" }
+        ],
+        dataScope: [
+          { required: true, message: "数据权限范围不能为空", trigger: "blur" }
+        ],
+      },
+      addForm:{
+        roleName: '',
+        roleKey: '',
+        dataScope: '',
+        remark: '',
+        id: ''
+      },
+      addDia: false,
       formQueryData:{
         roleName:'',
         pageSize: 10,
@@ -123,7 +185,6 @@ export default {
       },
       total: 0,
       list:[],
-      roleDetailDia: false,
       relateMenuDia: false,
       menuOptions: [],
       relateMenuForm:{
@@ -137,22 +198,40 @@ export default {
     this.getRoleList()
   },
   methods: {
+    showAddDia(){
+      this.updateType = 1
+      this.addDia = true;
+    },
+    addRole(){
+      if(this.updateType === 1){
+        api.addRole(this.addForm).then(res => {
+          if(res.code == '200'){
+            this.addDia = false;
+          }
+        })
+      }
+      if(this.updateType === 2){
+        api.editRole(this.addForm).then(res => {
+          if(res.code == '200'){
+            this.addDia = false;
+          }
+        })
+      }
+    },
     menuSelectedChange(node,checked){
-     if(checked){
+      if(checked){
        if(!this.selectedMenus.includes(node.id)){
          this.selectedMenus.push(node.id)
-         console.log( this.selectedMenus)
        }
      }else{
        this.selectedMenus = this.selectedMenus.filter(id => id !== node.id)
      }
-      // console.log(this.selectedMenus)
     },
     getMenuTree(rid){
       api.getMenuTree().then(response => {
         this.menuOptions = response.data
         api.getSelectedMenus(rid).then(res => {
-          this.selectedMenus = res.data
+          this.selectedMenus = res.data.filter(x => x != null )
           this.$nextTick(() => {
             this.$refs.menu.setCheckedKeys(this.selectedMenus)
           });
@@ -162,12 +241,12 @@ export default {
 
     relateSubmit(){
       this.relateMenuForm.mIds =  this.selectedMenus
-      console.log(this.relateMenuForm.mIds )
-      // api.relateRoleMenus(this.relateMenuForm).then(res => {
-      //   if(res.code == '200'){
-      //     this.relateMenuDia = false
-      //   }
-      // })
+      console.log(JSON.stringify(this.relateMenuForm))
+      api.relateRoleMenus(this.relateMenuForm).then(res => {
+        if(res.code == '200'){
+          this.relateMenuDia = false
+        }
+      })
     },
     showRelateMenuDia(row){
       this.getMenuTree(row.id)
@@ -175,7 +254,14 @@ export default {
       this.relateMenuDia = true
     },
     showRoleDetailDia(row){
-      this.roleDetailDia = true
+      this.addForm.roleKey = row.roleKey
+      this.addForm.roleName = row.roleName
+      this.addForm.dataScope = row.dataScope
+      this.addForm.remark = row.remark
+      console.log(this.addForm.remark)
+      this.addForm.id = row.id
+      this.updateType = 2
+      this.addDia = true
     },
     getRoleList(){
       const param = this.formQueryData

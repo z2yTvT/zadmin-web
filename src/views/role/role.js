@@ -28,11 +28,28 @@ export function relateRoleMenus(data) {
   })
 }
 
+export function addRole(data) {
+  return request({
+    url: '/role/addRole',
+    method: 'post',
+    data
+  })
+}
+export function editRole(data) {
+  return request({
+    url: '/role/editRole',
+    method: 'post',
+    data
+  })
+}
+
 
 
 export default {
   getRoleList,
   getMenuTree,
   getSelectedMenus,
-  relateRoleMenus
+  relateRoleMenus,
+  addRole,
+  editRole
 }
