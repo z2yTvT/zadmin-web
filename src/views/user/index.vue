@@ -24,7 +24,7 @@
       </div>
       <div>
         <el-card>
-          <el-button type="success" @click="showAdd">新增用户</el-button>
+          <el-button type="success" @click="showAdd" v-hasPerm="['sys:user:testbtn']">新增用户</el-button>
         </el-card>
       </div>
       <el-table

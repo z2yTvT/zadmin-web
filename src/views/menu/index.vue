@@ -52,7 +52,7 @@
           prop="perm"
         />
         <el-table-column
-          label="权限标识"
+          label="路径"
           align="center"
           width="200"
           prop="path"
@@ -91,7 +91,7 @@
 
     <el-dialog
       :title="diaTittle"
-      :visible.sync="updateDia"
+      :visible.sync="saveDia"
       width="40%">
 
       <el-form
@@ -101,18 +101,17 @@
         label-width="100px"
       >
         <el-form-item label="父级菜单" prop="pId">
-          <el-tree
-            v-model="formData.parentId"
-            placeholder="选择上级菜单"
-            :data="menuOptions"
-            filterable
-            check-strictly
-            :render-after-expand="false"
-          />
+          <el-cascader
+            :options="menuOptions"
+            :show-all-levels="false"
+            :props="defaultProps"
+            @change="setPid"
+          >
+          </el-cascader>
         </el-form-item>
 
         <el-form-item label="菜单名称" prop="menuName">
-          <el-input v-model="formData.name" placeholder="请输入菜单名称" />
+          <el-input v-model="formData.menuName" placeholder="请输入菜单名称" />
         </el-form-item>
 
         <el-form-item label="菜单类型" prop="menuType">
@@ -120,9 +119,9 @@
             v-model="formData.menuType"
             @change="handleMenuTypeChange"
           >
-            <el-radio label="1">目录</el-radio>
-            <el-radio label="2" >菜单</el-radio>
-            <el-radio label="3">按钮</el-radio>
+            <el-radio :label="1">目录</el-radio>
+            <el-radio :label="2" >菜单</el-radio>
+            <el-radio :label="3">按钮</el-radio>
           </el-radio-group>
         </el-form-item>
 
@@ -155,16 +154,11 @@
 
         <!-- 权限标识 -->
         <el-form-item
-          v-if="formData.menuType == 3"
+          v-if="formData.menuType == 3 || formData.menuType == 2"
           label="权限标识"
           prop="perm"
         >
           <el-input v-model="formData.perm" placeholder="sys:user:add" />
-        </el-form-item>
-
-
-        <el-form-item label="跳转路由" v-if="formData.menuType == 1">
-          <el-input v-model="formData.redirect" placeholder="跳转路由" />
         </el-form-item>
 
         <el-form-item label="状态" v-if="formData.menuType !== 3">
@@ -176,7 +170,7 @@
 
         <el-form-item label="排序" prop="sort">
           <el-input-number
-            v-model="formData.sort"
+            v-model="formData.menuSort"
             style="width: 100px"
             controls-position="right"
             :min="0"
@@ -185,66 +179,114 @@
       </el-form>
 
       <span slot="footer" class="dialog-footer">
-        <el-button @click="updateDia = false">取 消</el-button>
-        <el-button type="primary" @click="showAddDia">确 定</el-button>
+        <el-button @click="saveDia = false">取 消</el-button>
+        <el-button type="primary" @click="saveMenu">确 定</el-button>
       </span>
     </el-dialog>
   </div>
 </template>
 
 <script>
-import api from './menu.js'
+import api, { editMenu } from './menu.js'
 
 export default {
   name: "menu",
   data() {
     return{
+      defaultProps: {
+        label: 'label',
+        value: 'id',
+        checkStrictly: true,
+        children: 'children',
+        perm: ''
+      },
       formData:{
+        id:0,
         menuType: 2,
         hidden: 0,
         menuName: '',
         perm: '',
-        pId: '',
+        pId: 0,
         component: '',
         menuSort: '',
+        path: ''
       },
       rules: {
-        parentId: [{ required: true, message: '请选择顶级菜单', trigger: 'blur' }],
-        name: [{ required: true, message: '请输入菜单名称', trigger: 'blur' }],
-        type: [{ required: true, message: '请选择菜单类型', trigger: 'blur' }],
+        pId: [{ required: true, message: '请选择顶级菜单', trigger: 'blur' }],
+        menuName: [{ required: true, message: '请输入菜单名称', trigger: 'blur' }],
+        menuType: [{ required: true, message: '请选择菜单类型', trigger: 'blur' }],
         path: [{ required: true, message: '请输入路由路径', trigger: 'blur' }],
         component: [
           { required: true, message: '请输入组件完整路径', trigger: 'blur' },
         ],
+        perm: [{ required: true, message: '请输入权限标识', trigger: 'blur' }]
+
       },
       diaTittle: '',
       formQueryData: {
         menuName:''
       },
       menuList:[],
-      updateDia: false,
-      menuOptions:[]
+      saveDia: false,
+      menuOptions:[],
+      saveType: 0
     }
   },
   created() {
     this.getMenuList()
   },
   methods:{
+    saveMenu(){
+      if(this.formData.menuType === 1){
+        if(this.formData.pId === 0 && !this.formData.path.startsWith("/")){
+          this.formData.path = '/' + this.formData.path
+        }
+        this.formData.component = 'Layout'
+      }
+      console.log(this.formData)
+      if(this.saveType === 1){
+        api.addMenu(this.formData).then(res => {
+          if(res.code == '200'){
+            this.saveDia = false
+            this.resetForm()
+          }
+        })
+      }
+      if(this.saveType === 2){
+        api.editMenu(this.formData).then(res => {
+          if(res.code == '200'){
+            this.saveDia = false
+            this.resetForm()
+          }
+        })
+      }
+    },
+    setPid(e){
+      this.formData.pId = e[e.length - 1];
+    },
     handleMenuTypeChange(e){
       this.formData.menuType = Number(e)
     },
     showEdit(row){
       this.diaTittle = '修改菜单'
-      this.showUpdateDia()
+      this.saveType = 2
+      api.getMenuDetail(row.id).then(res => {
+        if(res.code == '200'){
+          this.formData = res.data
+          this.showUpdateDia()
+        }
+      })
     },
     showAddDia(){
       this.diaTittle = '新增菜单'
+      this.saveType = 1
       this.showUpdateDia()
     },
     showUpdateDia(){
-      this.updateDia = true;
+      this.saveDia = true;
       api.getMenuTree().then(res => {
-        this.menuOptions = res.data
+        const topM = { value: 0, label: '顶级菜单', children: res.data };
+        this.menuOptions.push(topM)
       })
     },
     getMenuList(){
@@ -252,6 +294,20 @@ export default {
         const res = response.data;
         this.menuList = res;
       })
+    },
+    resetForm(){
+      this.formData = {
+          id:0,
+          menuType: 2,
+          hidden: 0,
+          menuName: '',
+          perm: '',
+          pId: 0,
+          component: '',
+          menuSort: '',
+          path: ''
+      }
+      this.menuOptions = []
     }
   }
 }
