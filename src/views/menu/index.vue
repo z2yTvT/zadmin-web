@@ -187,7 +187,7 @@
 </template>
 
 <script>
-import api, { editMenu } from './menu.js'
+import api from './menu.js'
 
 export default {
   name: "menu",

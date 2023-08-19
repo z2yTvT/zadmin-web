@@ -147,7 +147,7 @@
 
 <script>
 
-import api from './role'
+import api, { getMenuTreeOptWithBtn } from './role'
 
 export default {
   name: "index",
