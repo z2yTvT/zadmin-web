@@ -229,7 +229,8 @@ export default {
       menuList:[],
       saveDia: false,
       menuOptions:[],
-      saveType: 0
+      saveType: 0,
+      cascaderKey: 0
     }
   },
   created() {
@@ -285,7 +286,9 @@ export default {
     showUpdateDia(){
       this.saveDia = true;
       api.getMenuTree().then(res => {
+        ++ this.cascaderKey
         const topM = { value: 0, label: '顶级菜单', children: res.data };
+        this.menuOptions = []
         this.menuOptions.push(topM)
       })
     },

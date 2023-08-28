@@ -78,7 +78,6 @@
       :visible.sync="saveDia"
       width="40%">
 
-
       <el-form
         ref="dataFormRef"
         :model="saveFormData"
@@ -91,6 +90,7 @@
             :show-all-levels="false"
             :props="defaultProps"
             @change="setPid"
+            :key="cascaderKey"
           >
           </el-cascader>
         </el-form-item>
@@ -133,6 +133,7 @@ export default {
   name: "index",
   data(){
     return {
+      cascaderKey:0,
       saveFormData:{
         id : 0,
         deptName: '',
@@ -169,6 +170,7 @@ export default {
       this.saveDia = true
       api.getDeptTreeOpt().then(res => {
         const topD = { id: 0, label: '顶级部门', children: res.data };
+        this.deptOpt = []
         this.deptOpt.push(topD)
       })
     },
@@ -176,6 +178,7 @@ export default {
     showEdit(e){
       api.getDeptById(e.id).then(res => {
         if(res.code == '200'){
+          this.diaTittle = '修改部门'
           this.saveFormData = res.data
           this.saveType = 2
           this.showSaveDia();
@@ -184,6 +187,7 @@ export default {
     },
 
     showAddDia(){
+      this.diaTittle = '新增部门'
       this.saveType = 1
       this.showSaveDia()
     },
